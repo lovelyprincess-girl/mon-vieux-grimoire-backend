@@ -7,10 +7,9 @@ const booksRoutes = require('./routes/books');
 
 const app = express();
 
-mongoose.connect('mongodb+srv://TON_USER:TON_MDP@cluster0.xxxxx.mongodb.net/?retryWrites=true&w=majority', 
-  { useNewUrlParser: true, useUnifiedTopology: true })
+mongoose.connect('mongodb+srv://moustaphantoufath_db_user:XYOXfX1CoC7HNRMF@cluster0.exizwru.mongodb.net/?appName=Cluster0')
   .then(() => console.log('Connexion à MongoDB réussie !'))
-  .catch(() => console.log('Connexion à MongoDB échouée !'));
+  .catch((error) => console.log('Connexion à MongoDB échouée !', error));
 
 app.use((req, res, next) => {
   res.setHeader('Access-Control-Allow-Origin', '*');

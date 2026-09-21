@@ -2,6 +2,12 @@ const Book = require('../models/Book');
 const fs = require('fs');
 const sharp = require('sharp');
 
+const extractYear = (value) => {
+  if (typeof value === 'number') return value;
+  const match = String(value).match(/\d{4}/);
+  return match ? parseInt(match[0], 10) : NaN;
+};
+
 exports.getAllBooks = (req, res, next) => {
   Book.find()
     .then(books => res.status(200).json(books))
@@ -24,6 +30,8 @@ exports.createBook = (req, res, next) => {
   const bookObject = JSON.parse(req.body.book);
   delete bookObject._id;
   delete bookObject._userId;
+
+  bookObject.year = extractYear(bookObject.year);
 
   const filename = req.file.filename.split('.')[0] + '.webp';
 
@@ -56,6 +64,10 @@ exports.modifyBook = (req, res, next) => {
   } : { ...req.body };
 
   delete bookObject._userId;
+
+  if (bookObject.year) {
+    bookObject.year = extractYear(bookObject.year);
+  }
 
   Book.findOne({ _id: req.params.id })
     .then(book => {
@@ -91,7 +103,23 @@ exports.modifyBook = (req, res, next) => {
 };
 
 exports.deleteBook = (req, res, next) => {
-    exports.rateBook = (req, res, next) => {
+  Book.findOne({ _id: req.params.id })
+    .then(book => {
+      if (book.userId != req.auth.userId) {
+        res.status(403).json({ message: 'unauthorized request' });
+      } else {
+        const filename = book.imageUrl.split('/images/')[1];
+        fs.unlink(`images/${filename}`, () => {
+          Book.deleteOne({ _id: req.params.id })
+            .then(() => res.status(200).json({ message: 'Livre supprimé !' }))
+            .catch(error => res.status(401).json({ error }));
+        });
+      }
+    })
+    .catch(error => res.status(400).json({ error }));
+};
+
+exports.rateBook = (req, res, next) => {
   const userId = req.auth.userId;
   const grade = req.body.rating;
 
@@ -112,19 +140,4 @@ exports.deleteBook = (req, res, next) => {
         .catch(error => res.status(400).json({ error }));
     })
     .catch(error => res.status(404).json({ error }));
-};
-  Book.findOne({ _id: req.params.id })
-    .then(book => {
-      if (book.userId != req.auth.userId) {
-        res.status(403).json({ message: 'unauthorized request' });
-      } else {
-        const filename = book.imageUrl.split('/images/')[1];
-        fs.unlink(`images/${filename}`, () => {
-          Book.deleteOne({ _id: req.params.id })
-            .then(() => res.status(200).json({ message: 'Livre supprimé !' }))
-            .catch(error => res.status(401).json({ error }));
-        });
-      }
-    })
-    .catch(error => res.status(400).json({ error }));
 };
